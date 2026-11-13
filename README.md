@@ -36,7 +36,7 @@ The HAL modules are:
 Joystick and moisture each own their own ADC/SPI state. They can be initialized,
 read, and cleaned up independently.
 
-## Hardware configuration
+## Hardware configuration 
 
 The sensor examples use `/dev/spidev0.0` at 250 kHz. Update the device path and
 speed in the application if your board uses a different SPI device or setup.
