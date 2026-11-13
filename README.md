@@ -31,6 +31,7 @@ The HAL modules are:
 - `adc`: opens/configures an SPI device and reads a 12-bit ADC channel.
 - `joystick`: reads ADC channels 0 and 1 and computes joystick direction.
 - `cap_moisture`: reads the capacitive moisture sensor from ADC channel 2.
+- `lcd`: drives a 16x2 HD44780 LCD through a PCF8574 I2C backpack.
 
 Joystick and moisture each own their own ADC/SPI state. They can be initialized,
 read, and cleaned up independently.
@@ -43,6 +44,12 @@ speed in the application if your board uses a different SPI device or setup.
 The relay GPIO chip paths and line offsets are configured in `app/src/main.c`.
 Verify those values against your board's GPIO mapping and relay wiring before
 running the application.
+
+The LCD HAL defaults to `/dev/i2c-1` and address `0x3F`. On the BYAI, connect
+SDA to physical pin 3 and SCL to physical pin 5. The LCD backpack must use the
+PCF8574 mapping expected by the HAL: P0=RS, P1=RW, P2=EN, P3=backlight, and
+P4-P7=D4-D7. Pass a different device path or address in `lcd_hal_config_t`
+when the hardware differs.
 
 The board must have SPI enabled, the ADC and sensors connected to the expected
 channels, and GPIO/SPI device permissions that allow the application to access
