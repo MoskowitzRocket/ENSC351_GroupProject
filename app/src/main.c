@@ -6,6 +6,7 @@
 #include <time.h>
 #include "hal/cap_moisture.h"
 #include "hal/joystick.h"
+#include "hal/lcd.h"
 #include "hal/relay.h"
 
 int main()
@@ -68,6 +69,35 @@ int main()
     }
 
     relay_hal_deinit(relay);
+
+    lcd_hal_t lcd;
+    const lcd_hal_config_t lcd_config = {
+        .device = LCD_HAL_DEFAULT_DEVICE,
+        .address = LCD_HAL_DEFAULT_ADDRESS,
+    };
+
+    lcd_hal_status_t lcd_status = lcd_hal_init(&lcd, &lcd_config);
+    if (lcd_status != LCD_HAL_OK) {
+        fprintf(stderr, "LCD init: %s\n", lcd_hal_strerror(lcd_status));
+        return 1;
+    }
+
+    lcd_status = lcd_hal_set_cursor(&lcd, 0, 0);
+    if (lcd_status == LCD_HAL_OK)
+        lcd_status = lcd_hal_write(&lcd, "Hello BeagleY!");
+    if (lcd_status == LCD_HAL_OK)
+        lcd_status = lcd_hal_set_cursor(&lcd, 0, 1);
+    if (lcd_status == LCD_HAL_OK)
+        lcd_status = lcd_hal_write(&lcd, "LCD HAL works!");
+    if (lcd_status != LCD_HAL_OK) {
+        fprintf(stderr, "LCD test: %s\n", lcd_hal_strerror(lcd_status));
+        lcd_hal_cleanup(&lcd);
+        return 1;
+    }
+
+    printf("LCD test passed; message displayed for 5 seconds.\n");
+    sleep(5);
+    lcd_hal_cleanup(&lcd);
     return 0;
 
 
