@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <time.h>
 #include <unistd.h>
 #include "hal/cap_moisture.h"
@@ -17,6 +18,7 @@
 #include "update_display.h"
 #include "automatic.h"
 #include "timed.h"
+#include "debug_log.h"
 
 typedef struct {
     joystick_hal_t joystick;
@@ -81,13 +83,13 @@ static int init_hal(app_hal_t *hal)
     hal->button_initialized = false;
 
     if (joystick_hal_init(&hal->joystick, device, speed_hz) != 0) {
-        fprintf(stderr, "Joystick init failed\n");
+        debug_log(stderr, "Joystick init failed\n");
         return 1;
     }
     hal->joystick_initialized = true;
 
     if (cap_moisture_hal_init(&hal->moisture, device, speed_hz) != 0) {
-        fprintf(stderr, "Moisture sensor init failed\n");
+        debug_log(stderr, "Moisture sensor init failed\n");
         cleanup_hal(hal);
         return 1;
     }
@@ -95,14 +97,14 @@ static int init_hal(app_hal_t *hal)
 
     relay_status_t relay_status = relay_hal_init(&relay_config, &hal->relay);
     if (relay_status != RELAY_OK) {
-        fprintf(stderr, "Relay init: %s\n", relay_hal_strerror(relay_status));
+        debug_log(stderr, "Relay init: %s\n", relay_hal_strerror(relay_status));
         cleanup_hal(hal);
         return 1;
     }
 
     lcd_hal_status_t lcd_status = lcd_hal_init(&hal->lcd, &lcd_config);
     if (lcd_status != LCD_HAL_OK) {
-        fprintf(stderr, "LCD init: %s\n", lcd_hal_strerror(lcd_status));
+        debug_log(stderr, "LCD init: %s\n", lcd_hal_strerror(lcd_status));
         cleanup_hal(hal);
         return 1;
     }
@@ -162,6 +164,10 @@ static int init_hal(app_hal_t *hal)
 
 int main(void)
 {
+    if (setenv("TZ", "America/Vancouver", 1) != 0)
+        debug_log(stderr, "Could not set timezone to America/Vancouver\n");
+    tzset();
+
     app_hal_t hal = {0};
     settings_t settings;
     state_t state = {
@@ -185,7 +191,7 @@ int main(void)
         .pump_channel = PUMP_RELAY_CHANNEL,
     };
 
-    printf("Plant Waterer Software Starting!!\n");
+    debug_log(stdout, "Plant Waterer Software Starting!!\n");
 
     while (true) {
         /*
@@ -196,7 +202,7 @@ int main(void)
                          setup_mode_input_active(&hal.joystick, &position);
 
         if (input_now && !input_was_pressed) {
-            printf("Input detected, entering setup\n");
+            debug_log(stdout, "Input detected, entering setup\n");
             if (setup_mode_run(&setup_ctx, &settings) != 0)
                 break;   /* pump failed to shut off */
 
@@ -212,7 +218,7 @@ int main(void)
 
         int moisture = cap_moisture_hal_read(&hal.moisture);
         if (moisture < 0) {
-            fprintf(stderr, "Moisture sensor read failed\n");
+            debug_log(stderr, "Moisture sensor read failed\n");
             break;
         }
 
@@ -227,6 +233,8 @@ int main(void)
         }
 
         update_display(&hal.lcd, &settings, &state, moisture);
+        // printf("Moisture value: %d\n", cap_moisture_hal_read(&hal.moisture));
+
 
         usleep(50 * 1000);
     }

@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "hal/button.h"
+#include "debug_log.h"
 
 typedef enum {
     EV_NONE,
@@ -29,19 +30,19 @@ static const char *event_name(ui_event_t event)
 
 static void debug_print_settings(const char *label, const settings_t *settings)
 {
-    printf("[setup] %s: mode=%s freq=%u %s duration=%u sec "
-           "moisture_threshold=%u burst=%u sec soak=%u sec max=%u sec\n",
-           label,
-           settings->mode == MODE_AUTO ? "AUTO" : "TIMED",
-           (unsigned int)settings->freqValue,
-           settings->freqUnit == UNIT_MIN
-               ? "MIN"
-               : settings->freqUnit == UNIT_HOUR ? "HOUR" : "DAY",
-           (unsigned int)settings->durationSec,
-           (unsigned int)settings->moistureThreshold,
-           (unsigned int)settings->burstSec,
-           (unsigned int)settings->soakDelaySec,
-           (unsigned int)settings->maxWaterSec);
+    debug_log(stdout, "[setup] %s: mode=%s freq=%u %s duration=%u sec "
+               "moisture_threshold=%u burst=%u sec soak=%u sec max=%u sec\n",
+              label,
+              settings->mode == MODE_AUTO ? "AUTO" : "TIMED",
+              (unsigned int)settings->freqValue,
+              settings->freqUnit == UNIT_MIN
+                  ? "MIN"
+                  : settings->freqUnit == UNIT_HOUR ? "HOUR" : "DAY",
+              (unsigned int)settings->durationSec,
+              (unsigned int)settings->moistureThreshold,
+              (unsigned int)settings->burstSec,
+              (unsigned int)settings->soakDelaySec,
+              (unsigned int)settings->maxWaterSec);
 }
 
 /* ---------- input ---------- */
@@ -113,7 +114,7 @@ static ui_event_t ui_wait_event(const setup_mode_ctx_t *ctx)
 
     usleep(30 * 1000);   /* debounce */
     held = ev;
-    printf("[setup] input event: %s\n", event_name(ev));
+    debug_log(stdout, "[setup] input event: %s\n", event_name(ev));
     return ev;
 }
 
@@ -157,7 +158,7 @@ static int ui_choose_option(const setup_mode_ctx_t *ctx, const char *title,
             idx = (idx + count - 1) % count;
             break;
         case EV_SELECT:
-            printf("[setup] %s selected: %s\n", title, options[idx]);
+            debug_log(stdout, "[setup] %s selected: %s\n", title, options[idx]);
             return idx;
         default:
             break;
@@ -185,8 +186,8 @@ static uint16_t ui_choose_value(const setup_mode_ctx_t *ctx, const char *title,
         case EV_RIGHT:  value += coarse; break;
         case EV_LEFT:   value -= coarse; break;
         case EV_SELECT:
-            printf("[setup] %s selected: %u %s\n", title,
-                   (unsigned int)value, suffix);
+                 debug_log(stdout, "[setup] %s selected: %u %s\n", title,
+                     (unsigned int)value, suffix);
             return (uint16_t)value;
         default:        break;
         }
@@ -205,17 +206,17 @@ int setup_mode_run(const setup_mode_ctx_t *ctx, settings_t *settings)
     /* Indexed by enum Unit. Keeps interval_ms inside uint32_t. */
     static const uint16_t unit_max[] = { 59, 23, 30 };
 
-    printf("[setup] entering setup mode\n");
+    debug_log(stdout, "[setup] entering setup mode\n");
     debug_print_settings("initial settings", settings);
 
     /* Pump OFF */
     relay_status_t rs = relay_hal_set(ctx->relay, ctx->pump_channel, false);
     if (rs != RELAY_OK) {
-        fprintf(stderr, "Pump shutdown failed: %s\n", relay_hal_strerror(rs));
-        fprintf(stderr, "[setup] failed to enter setup mode\n");
+        debug_log(stderr, "Pump shutdown failed: %s\n", relay_hal_strerror(rs));
+        debug_log(stderr, "[setup] failed to enter setup mode\n");
         return -1;
     }
-    printf("[setup] pump off\n");
+    debug_log(stdout, "[setup] pump off\n");
 
     lcd_show(ctx, "Setup Mode", "Pump OFF");
     usleep(1000 * 1000);
@@ -233,7 +234,7 @@ int setup_mode_run(const setup_mode_ctx_t *ctx, settings_t *settings)
                 1,
                 25,
                 "");
-        printf("[setup] auto settings selected\n");
+        debug_log(stdout, "[setup] auto settings selected\n");
     } else {
         settings->freqUnit = (enum Unit)ui_choose_option(
             ctx, "Every:", unit_names, 3, (int)settings->freqUnit);
@@ -250,7 +251,7 @@ int setup_mode_run(const setup_mode_ctx_t *ctx, settings_t *settings)
                  (unsigned long)settings_interval_ms(settings));
         lcd_show(ctx, "Interval set", line);
         usleep(1500 * 1000);
-        printf("[setup] timed interval: %s\n", line);
+        debug_log(stdout, "[setup] timed interval: %s\n", line);
     }
 
     debug_print_settings("final settings", settings);

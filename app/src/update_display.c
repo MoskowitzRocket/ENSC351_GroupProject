@@ -77,7 +77,7 @@ void update_display(lcd_hal_t *lcd, const settings_t *settings,
         time_t now = time(NULL);
         struct tm tm_now;
         localtime_r(&now, &tm_now);
-        strftime(line1, sizeof line1, "%H:%M:%S", &tm_now);
+        strftime(line1, sizeof line1, "%I:%M:%S", &tm_now);
         snprintf(line2, sizeof line2, "Mode: %s",
                  settings->mode == MODE_AUTO ? "Auto" : "Timed");
     } else if (settings->mode == MODE_AUTO) {

@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "debug_log.h"
+
 
 // Maximum Run Length ( 30 Seconds ) 
 #define MAX_PUMP_SEC  30    
@@ -24,7 +26,8 @@ static bool pump_set(relay_hal_t *relay, unsigned int channel, bool on)
     // Somethings Gone Wrong 
     // Failed At Start Or Shutdown? What Error? 
     // relay_hal_strerror Shows Us What Error, Shown On Second "%s"
-    fprintf(stderr, "Pump %s failed: %s\n", on ? "start" : "shutdown", relay_hal_strerror(rs));
+    debug_log(stderr, "Pump %s failed: %s\n", on ? "start" : "shutdown",
+              relay_hal_strerror(rs));
     return false;
 }
 

@@ -7,7 +7,7 @@ void settings_set_defaults(settings_t *settings)
     settings->freqValue = 2;
     settings->durationSec = 10;
     settings->moistureThreshold = 3000;
-    settings->burstSec = 2;
+    settings->burstSec = 5;
     settings->soakDelaySec = 10;
     settings->maxWaterSec = 30;
 }

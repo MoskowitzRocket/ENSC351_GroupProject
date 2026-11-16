@@ -5,6 +5,8 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "debug_log.h"
+
 #define SENSOR_MIN    2300   // Broken If Outside Min (When Tested, SUPER WET Was ~2500)
 #define SENSOR_MAX    3800   // Broken If Outside Max (When Tested DRY Was ~ 3600)
 #define CHECK_SEC     60     // How Often Check Soil                
@@ -53,8 +55,8 @@ static bool pump_set(relay_hal_t *relay, unsigned int channel, bool on)
         return true;
 
     // If Failed
-    fprintf(stderr, "Pump %s failed: %s\n", on ? "start" : "shutdown",
-            relay_hal_strerror(rs));
+    debug_log(stderr, "Pump %s failed: %s\n", on ? "start" : "shutdown",
+              relay_hal_strerror(rs));
 
     return false;
 }
@@ -163,7 +165,7 @@ int automatic_update(const settings_t *s, state_t *st, cap_moisture_hal_t *senso
         st->soakStartTime   = now;
 
         // Optional
-        printf("[auto] pump off, soaking\n");
+        debug_log(stdout, "[auto] pump off, soaking\n");
 
         return 0;
     }
@@ -187,12 +189,12 @@ int automatic_update(const settings_t *s, state_t *st, cap_moisture_hal_t *senso
 
         // Outside Range?
         if (sensor_bad(m)) {
-            printf("[auto] sensor problem, ending cycle\n");
+            debug_log(stdout, "[auto] sensor problem, ending cycle\n");
             finish_cycle(st, now, true);
 
         // Mositure Level? Wet Enough?
         } else if (m <= s->moistureThreshold) {
-            printf("[auto] soil is wet enough (%d)\n", m);
+            debug_log(stdout, "[auto] soil is wet enough (%d)\n", m);
             finish_cycle(st, now, false);
 
         // Exceed Total Time? 
@@ -200,12 +202,12 @@ int automatic_update(const settings_t *s, state_t *st, cap_moisture_hal_t *senso
         // Total Watered This Cycle, Burst Duration, Max Water Allowed This Cycle
         // Check If Goes Over Max Allowed
         } else if (st->totalThisCycle + s->burstSec <= s->maxWaterSec) {
-            printf("[auto] still dry (%d), another burst\n", m);
+            debug_log(stdout, "[auto] still dry (%d), another burst\n", m);
             st->soaking = false;
             return start_burst(st, relay, pump_channel, now);
 
         } else {
-            printf("[auto] max water reached, pausing\n");
+            debug_log(stdout, "[auto] max water reached, pausing\n");
             finish_cycle(st, now, true);
         }
         return 0;
@@ -229,11 +231,11 @@ int automatic_update(const settings_t *s, state_t *st, cap_moisture_hal_t *senso
 
     // Bad Sensor
     if (sensor_bad(m)) {
-        printf("[auto] sensor problem, not pumping\n");
+        debug_log(stdout, "[auto] sensor problem, not pumping\n");
 
     // Moisture Level
     } else if (m > s->moistureThreshold) {
-        printf("[auto] soil is dry (%d), watering\n", m);
+        debug_log(stdout, "[auto] soil is dry (%d), watering\n", m);
         st->totalThisCycle = 0;
         return start_burst(st, relay, pump_channel, now);
     }
