@@ -10,6 +10,10 @@ typedef struct {
     uint32_t lastWaterTime;    // time(NULL) of last watering
     uint32_t waterStartTime;
     uint32_t totalThisCycle;   // for the safety cutoff
+
+    uint32_t soakStartTime;    // Auto mode; when the soak wait began
+    uint32_t nextCheckTime;    // Auto mode: don't check the soil before this time
+
 } state_t;
 
 #endif /* STATE_H */

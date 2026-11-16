@@ -15,6 +15,8 @@
 #include "setup_mode.h"
 #include "state.h"
 #include "update_display.h"
+#include "automatic.h"
+#include "timed.h"
 
 typedef struct {
     joystick_hal_t joystick;
@@ -186,7 +188,12 @@ int main(void)
     printf("Plant Waterer Software Starting!!\n");
 
     while (true) {
-        bool input_now = setup_mode_input_active(&hal.joystick, &position);
+        /*
+         * Do not sample setup controls while the pump is running. Relay
+         * switching can produce a transient joystick/button reading.
+         */
+        bool input_now = !state.watering &&
+                         setup_mode_input_active(&hal.joystick, &position);
 
         if (input_now && !input_was_pressed) {
             printf("Input detected, entering setup\n");
@@ -203,15 +210,22 @@ int main(void)
         }
         input_was_pressed = input_now;
 
-        if (settings.mode == MODE_AUTO) {
-            // printf("[AUTO] Handled later :)\n");
-        } else if (settings.mode == MODE_TIMED) {
-            // if (update_timed_watering(&hal, &settings, &state) != 0)
-            //     break;
+        int moisture = cap_moisture_hal_read(&hal.moisture);
+        if (moisture < 0) {
+            fprintf(stderr, "Moisture sensor read failed\n");
+            break;
         }
 
-        // Update Display
-        int moisture = 0;
+        if (settings.mode == MODE_AUTO) {
+            if (automatic_update(&settings, &state, &hal.moisture, hal.relay,
+                                 PUMP_RELAY_CHANNEL, &moisture) != 0)
+                break;
+        } else if (settings.mode == MODE_TIMED) {
+            if (timed_update(&settings, &state, hal.relay,
+                             PUMP_RELAY_CHANNEL) != 0)
+                break;
+        }
+
         update_display(&hal.lcd, &settings, &state, moisture);
 
         usleep(50 * 1000);

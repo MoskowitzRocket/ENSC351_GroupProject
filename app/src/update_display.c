@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define PANE_PERIOD_MS    10000U   // how long each pane is shown
+#define PANE_PERIOD_MS    5000U   // how long each pane is shown
 #define REFRESH_PERIOD_MS 250U    // min time between LCD writes
 
 static uint64_t now_ms(void)
